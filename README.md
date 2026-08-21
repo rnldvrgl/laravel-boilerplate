@@ -122,6 +122,68 @@ The application responds with JSON using:
 
 If you want frontend pages later, you can add them separately without changing this API-focused structure.
 
+## Local setup
+
+Follow these steps to run the project locally.
+
+### 1. Copy environment variables
+
+Copy `.env.example` to `.env` if it is not already present:
+
+```bash
+cp .env.example .env
+```
+
+### 2. Set the API protection key
+
+Open `.env` and set a local secret:
+
+```env
+API_AUTH_KEY=your-local-secret-key
+```
+
+This key is required on protected API requests through the `X-API-Key` header.
+
+### 3. Start the Docker environment
+
+From the project root:
+
+```bash
+docker compose up -d --build
+```
+
+### 4. Install PHP dependencies
+
+```bash
+docker compose exec app composer install
+```
+
+### 5. Generate the Laravel app key
+
+```bash
+docker compose exec app php artisan key:generate
+```
+
+### 6. Run database migrations
+
+```bash
+docker compose exec app php artisan migrate
+```
+
+### 7. Run the app tests
+
+```bash
+docker compose exec app php artisan test --filter=AuthApiTest --compact
+```
+
+### 8. Start using the API
+
+Protected endpoints require the header:
+
+```http
+X-API-Key: your-local-secret-key
+```
+
 ## API routes
 
 Routes are defined in `routes/api.php`.
