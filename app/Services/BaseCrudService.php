@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 abstract class BaseCrudService
 {
+    // Shared CRUD contract for starter modules. Keep each module thin and predictable.
     abstract protected function modelClass(): string;
 
     protected function query(): Builder

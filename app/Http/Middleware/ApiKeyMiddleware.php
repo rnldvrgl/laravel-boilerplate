@@ -13,6 +13,7 @@ class ApiKeyMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Keep the shared API secret in the environment so each deployment can set its own value.
         $expectedKey = config('app.api_auth_key');
 
         if (blank($expectedKey)) {
@@ -22,6 +23,7 @@ class ApiKeyMiddleware
             ], 500);
         }
 
+        // Require the same key on protected requests to reduce accidental exposure.
         $providedKey = $request->header('X-API-Key');
 
         if (! \is_string($providedKey) || ! hash_equals($expectedKey, $providedKey)) {

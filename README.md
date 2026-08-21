@@ -122,6 +122,22 @@ The application responds with JSON using:
 
 If you want frontend pages later, you can add them separately without changing this API-focused structure.
 
+## Commenting conventions
+
+Keep comments light and intentional. Use them to explain a design decision, a non-obvious validation rule, or a shared convention that may not be obvious to the next developer.
+
+Good examples:
+
+- explain why a middleware is enforcing a shared API key
+- explain why a service layer exists instead of business logic in controllers
+- explain a custom authorization rule that is not obvious from the route alone
+
+Avoid:
+
+- comments that repeat the code literally
+- comments on every line
+- stale comments left behind after refactors
+
 ## Local setup
 
 Follow these steps to run the project locally.

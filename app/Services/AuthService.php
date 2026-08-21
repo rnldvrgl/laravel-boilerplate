@@ -15,6 +15,7 @@ class AuthService
      */
     public function register(array $attributes): User
     {
+        // Register the user and keep password hashing inside the service layer.
         $user = User::create([
             'name' => $attributes['name'],
             'email' => $attributes['email'],
