@@ -256,6 +256,44 @@ This keeps controller logic consistent and makes future modules easy to build.
 - Use resources for serialized output.
 - Put tests next to behavior and validate the API contract.
 
+## Authorization conventions
+
+This starter uses a consistent naming pattern for Laravel authorization so it stays predictable across policies, gates, and route middleware.
+
+### Policy methods
+
+Policy methods should use camelCase and match the action name:
+
+```php
+public function manageUsers(User $user): bool
+{
+    return $user->hasRole('admin');
+}
+```
+
+### Gate and ability names
+
+Ability names passed to `Gate::define()`, `can:...`, and `$user->can(...)` should use snake_case:
+
+```php
+Gate::define('manage_users', fn (User $user): bool => $user->hasRole('admin'));
+```
+
+This keeps the route middleware and the authorization API aligned:
+
+```php
+Route::middleware('can:manage_users')->group(function () {
+    // protected routes
+});
+```
+
+### Why the two names differ
+
+- `manageUsers` is the method name inside the policy class.
+- `manage_users` is the ability identifier used by Laravel authorization checks.
+
+The mapping is intentional and should stay consistent. Avoid mixing the two styles in the same feature unless there is a clear reason.
+
 ## Testing
 
 Use the Laravel test suite for validation.
@@ -271,15 +309,5 @@ Or a focused auth test:
 ```bash
 php artisan test --filter=AuthApiTest
 ```
-
-## Recommended next steps
-
-If you want to extend this boilerplate, the best next additions are:
-
-- profile image upload
-- email verification flow
-- password reset by email token
-- role and permission scaffolding
-- generic admin CRUD module using `BaseCrudService`
 
 This starter is designed to be a clean base for building API-first Laravel applications quickly and consistently.
