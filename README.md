@@ -1,58 +1,285 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel API Boilerplate
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This project is a reusable Laravel API starter focused on authentication, validation, service-based business logic, and clean module scaffolding. It is intentionally generic and does not include sample domain features such as posts, products, or an app-specific CRUD module.
 
-## About Laravel
+## What this starter includes
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Laravel API structure with versioned routes under `/api/v1`
+- Sanctum authentication
+- Reusable API response helper
+- Form request validation
+- User profile update flow
+- Password reset flow
+- Generic service layer pattern for future modules
+- Feature tests covering auth and account behavior
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Architecture overview
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Model
 
-## Learning Laravel
+Models live in `app/Models`.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Example:
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- `app/Models/User.php`
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Responsibilities:
 
-## Agentic Development
+- Eloquent model definition
+- Casts, fillable attributes, relationships
+- Database access logic only at the model layer
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Notes:
 
-```bash
-composer require laravel/boost --dev
+- Keep business rules out of the model when they become complex.
+- For feature-specific logic, move it into a service class.
+- This starter uses the default `User` model for authentication and account actions.
 
-php artisan boost:install
+### Request validation
+
+Form requests live in `app/Http/Requests`.
+
+Examples:
+
+- `RegisterUserRequest`
+- `LoginUserRequest`
+- `UpdateProfileRequest`
+- `ResetPasswordRequest`
+
+Responsibilities:
+
+- Validate incoming payloads
+- Enforce authorization rules with `authorize()`
+- Keep controller methods thin and focused on orchestration
+
+### Controller
+
+Controllers live in `app/Http/Controllers`.
+
+Example:
+
+- `app/Http/Controllers/Api/V1/AuthController.php`
+
+Responsibilities:
+
+- Accept HTTP input
+- Validate request data
+- Call a service layer
+- Return a consistent JSON response
+
+Important rule:
+
+- The controller should not contain business logic. It should orchestrate workflows and delegate logic to services.
+
+### Service layer
+
+Services live in `app/Services`.
+
+Examples:
+
+- `AuthService`
+- `BaseCrudService`
+
+Responsibilities:
+
+- Encapsulate reusable auth and business logic
+- Keep controllers readable
+- Make logic easier to test and reuse across modules
+
+The `BaseCrudService` is meant to be the default scaffold for new modules:
+
+- `list()`
+- `find()`
+- `create()`
+- `update()`
+- `delete()`
+
+This pattern gives each new module a consistent structure without repeating CRUD code.
+
+### Resource layer
+
+Resources live in `app/Http/Resources`.
+
+Example:
+
+- `app/Http/Resources/UserResource.php`
+
+Responsibilities:
+
+- Shape JSON payloads to return to API consumers
+- Hide internal attribute details when needed
+- Keep API output consistent
+
+### View layer
+
+This starter is API-first, so there are no Blade view files by default.
+
+The application responds with JSON using:
+
+- API controllers
+- Resource classes
+- `ApiResponse` helper
+
+If you want frontend pages later, you can add them separately without changing this API-focused structure.
+
+## API routes
+
+Routes are defined in `routes/api.php`.
+
+### Public auth routes
+
+```http
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+GET /api/v1/health
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### Authenticated routes
 
-## Contributing
+```http
+GET /api/v1/auth/me
+PUT /api/v1/auth/profile
+POST /api/v1/auth/password/reset
+POST /api/v1/auth/logout
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Example requests
 
-## Code of Conduct
+### Register user
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Jane Doe",
+    "email": "jane@example.com",
+    "password": "Password123!",
+    "password_confirmation": "Password123!"
+  }'
+```
 
-## Security Vulnerabilities
+### Login user
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "jane@example.com",
+    "password": "Password123!"
+  }'
+```
 
-## License
+### Get authenticated profile
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+curl -X GET http://localhost:8000/api/v1/auth/me \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Update profile
+
+```bash
+curl -X PUT http://localhost:8000/api/v1/auth/profile \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Jane Smith",
+    "email": "jane.smith@example.com"
+  }'
+```
+
+### Reset password
+
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/password/reset \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "current_password": "Password123!",
+    "password": "NewPassword456!",
+    "password_confirmation": "NewPassword456!"
+  }'
+```
+
+## Reusable pattern for new modules
+
+Use this structure whenever you add a new feature:
+
+1. Create or update the model in `app/Models`
+2. Add validation in `app/Http/Requests`
+3. Add a controller in `app/Http/Controllers/Api/V1`
+4. Put business logic in `app/Services`
+5. Add a resource in `app/Http/Resources`
+6. Register route in `routes/api.php`
+7. Add tests in `tests/Feature`
+
+Template pattern:
+
+```php
+class ExampleController extends Controller
+{
+    public function __construct(
+        protected ExampleService $exampleService,
+    ) {}
+
+    public function index()
+    {
+        $items = $this->exampleService->list();
+
+        return ApiResponse::success([
+            'items' => ExampleResource::collection($items),
+        ]);
+    }
+}
+```
+
+And in the service:
+
+```php
+class ExampleService extends BaseCrudService
+{
+    protected function modelClass(): string
+    {
+        return Example::class;
+    }
+}
+```
+
+This keeps controller logic consistent and makes future modules easy to build.
+
+## Suggested conventions
+
+- Controllers should be thin and route-focused.
+- Validation belongs in form requests.
+- Shared logic belongs in services.
+- Use `ApiResponse` for consistent JSON responses.
+- Use resources for serialized output.
+- Put tests next to behavior and validate the API contract.
+
+## Testing
+
+Use the Laravel test suite for validation.
+
+Example:
+
+```bash
+php artisan test
+```
+
+Or a focused auth test:
+
+```bash
+php artisan test --filter=AuthApiTest
+```
+
+## Recommended next steps
+
+If you want to extend this boilerplate, the best next additions are:
+
+- profile image upload
+- email verification flow
+- password reset by email token
+- role and permission scaffolding
+- generic admin CRUD module using `BaseCrudService`
+
+This starter is designed to be a clean base for building API-first Laravel applications quickly and consistently.
