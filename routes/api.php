@@ -14,13 +14,13 @@ Route::get('/health', function () {
 });
 
 Route::prefix('v1')->group(function () {
-    Route::middleware('throttle:api-auth')->group(function () {
+    Route::middleware(['api.key', 'throttle:api-auth'])->group(function () {
         Route::post('/auth/register', [AuthController::class, 'register']);
         Route::post('/auth/login', [AuthController::class, 'login']);
         Route::post('/auth/password/reset-token', [AuthController::class, 'resetPasswordByToken']);
     });
 
-    Route::middleware(['auth:sanctum', 'throttle:api-auth'])->group(function () {
+    Route::middleware(['api.key', 'auth:sanctum', 'throttle:api-auth'])->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
         Route::post('/auth/profile/avatar', [AuthController::class, 'uploadAvatar']);

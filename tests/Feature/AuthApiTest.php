@@ -17,6 +17,15 @@ class AuthApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withHeaders([
+            'X-API-Key' => env('API_AUTH_KEY', 'local-dev-api-key-change-me'),
+        ]);
+    }
+
     public function test_user_can_register_with_valid_data(): void
     {
         $response = $this->postJson('/api/v1/auth/register', [

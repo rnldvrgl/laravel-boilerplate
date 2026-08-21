@@ -54,6 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'api_auth_key' => env('API_AUTH_KEY', ''),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
