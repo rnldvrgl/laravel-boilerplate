@@ -3,7 +3,10 @@
 namespace App\Services;
 
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Storage;
 
 class AuthService
 {
@@ -44,6 +47,27 @@ class AuthService
         return $user->fresh();
     }
 
+    public function uploadAvatar(User $user, UploadedFile $file): User
+    {
+        $path = $file->storePubliclyAs('avatars', $user->id.'-'.time().'.'.$file->extension(), 'public');
+
+        $user->avatar_path = $path;
+        $user->save();
+
+        return $user->fresh();
+    }
+
+    public function sendVerificationNotification(User $user): bool
+    {
+        if ($user->hasVerifiedEmail()) {
+            return false;
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return true;
+    }
+
     public function resetPassword(User $user, string $currentPassword, string $newPassword): bool
     {
         if (! Hash::check($currentPassword, $user->password)) {
@@ -54,5 +78,19 @@ class AuthService
         $user->save();
 
         return true;
+    }
+
+    /**
+     * @param  array<string, string>  $attributes
+     */
+    public function resetPasswordByToken(array $attributes): bool
+    {
+        $status = Password::reset($attributes, function (User $user, string $password) {
+            $user->forceFill([
+                'password' => Hash::make($password),
+            ])->save();
+        });
+
+        return $status === Password::PASSWORD_RESET;
     }
 }

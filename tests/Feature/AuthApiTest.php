@@ -2,9 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Tests\TestCase;
 
 class AuthApiTest extends TestCase
@@ -168,6 +174,97 @@ class AuthApiTest extends TestCase
             ->assertJsonPath('message', 'Password updated successfully.');
 
         $this->assertTrue(Hash::check('NewPassword456!', $user->fresh()->password));
+    }
+
+    public function test_authenticated_user_can_upload_avatar(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/auth/profile/avatar', [
+                'avatar' => UploadedFile::fake()->image('avatar.png'),
+            ]);
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.avatar_url', fn (string $value) => str_contains($value, 'avatars/'));
+
+        $this->assertNotNull($user->fresh()->avatar_path);
+    }
+
+    public function test_user_can_request_email_verification_notification(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create([
+            'email_verified_at' => null,
+        ]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/auth/email/verification-notification');
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Verification email sent.');
+
+        Notification::assertSentTo($user, \Illuminate\Auth\Notifications\VerifyEmail::class);
+    }
+
+    public function test_user_can_reset_password_with_email_token(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'reset@example.com',
+            'password' => 'OldPassword123!',
+        ]);
+
+        $token = Password::broker()->createToken($user);
+
+        $response = $this->postJson('/api/v1/auth/password/reset-token', [
+            'token' => $token,
+            'email' => 'reset@example.com',
+            'password' => 'NewPassword456!',
+            'password_confirmation' => 'NewPassword456!',
+        ]);
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Password reset successfully.');
+
+        $this->assertTrue(Hash::check('NewPassword456!', $user->fresh()->password));
+    }
+
+    public function test_user_can_manage_roles_and_permissions(): void
+    {
+        $user = User::factory()->create();
+        $adminRole = Role::query()->create(['name' => 'admin', 'guard_name' => 'web']);
+        $manageUsersPermission = Permission::query()->create(['name' => 'manage_users', 'guard_name' => 'web']);
+
+        $user->assignRole($adminRole);
+        $adminRole->givePermissionTo($manageUsersPermission);
+
+        $this->assertTrue($user->fresh()->hasRole('admin'));
+        $this->assertTrue($user->fresh()->can('manage_users'));
+    }
+
+    public function test_admin_can_list_users_with_generic_crud_service(): void
+    {
+        $admin = User::factory()->create();
+        $adminRole = Role::query()->create(['name' => 'admin', 'guard_name' => 'web']);
+        $manageUsersPermission = Permission::query()->create(['name' => 'manage_users', 'guard_name' => 'web']);
+        $admin->assignRole($adminRole);
+        $adminRole->givePermissionTo($manageUsersPermission);
+
+        User::factory()->count(3)->create();
+
+        $response = $this->actingAs($admin, 'sanctum')
+            ->getJson('/api/v1/admin/users');
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.total', 4);
     }
 
     public function test_user_policy_allows_self_and_denies_other_users(): void

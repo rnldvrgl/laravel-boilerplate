@@ -26,6 +26,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(User::class, UserPolicy::class);
+        Gate::define('manage_users', fn (User $user): bool =>
+            $user->hasRole('admin')
+            || $user->permissions()->where('name', 'manage_users')->exists()
+            || $user->roles()->whereHas('permissions', fn ($query) => $query->where('name', 'manage_users'))->exists()
+        );
 
         RateLimiter::for('api-auth', function (Request $request) {
             return Limit::perMinute(20)->by($request->ip());
