@@ -26,14 +26,9 @@ class UserService extends BaseCrudService
             $query->with($with);
         }
 
-        if (! empty($filters['search'])) {
-            $search = $filters['search'];
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
+        // Keep module-specific list logic short and delegate cross-cutting filtering to the shared helper.
+        $query = \App\Support\QueryBuilderHelper::applyFilters($query, $filters, ['name', 'email']);
 
-        return $query->latest()->paginate($perPage);
+        return \App\Support\QueryBuilderHelper::applySorting($query, $filters['sort_by'] ?? null, $filters['sort_direction'] ?? 'desc')->paginate($perPage);
     }
 }

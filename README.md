@@ -281,6 +281,28 @@ curl -X POST http://localhost:8000/api/v1/auth/password/reset \
 
 ## Reusable pattern for new modules
 
+### Shared query helper
+
+This starter includes a small shared helper for common query work:
+
+- `App\Support\QueryBuilderHelper::applyFilters()`
+- `App\Support\QueryBuilderHelper::applySorting()`
+
+Use it when multiple modules need the same search, filter, or sort behavior. This reduces duplication and keeps list endpoints consistent across the API.
+
+### Base CRUD service
+
+The `BaseCrudService` gives each module a predictable starting point:
+
+- `list()`
+- `find()`
+- `create()`
+- `update()`
+- `delete()`
+
+New modules can extend this service and only override the model mapping and any feature-specific logic they need.
+
+
 Use this structure whenever you add a new feature:
 
 1. Create or update the model in `app/Models`

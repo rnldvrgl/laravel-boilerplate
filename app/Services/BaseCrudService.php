@@ -30,15 +30,10 @@ abstract class BaseCrudService
             $query->with($with);
         }
 
-        foreach ($filters as $field => $value) {
-            if ($value === null || $value === '') {
-                continue;
-            }
+        // Shared filter logic keeps module-level services consistent without repeating the same query code.
+        $query = \App\Support\QueryBuilderHelper::applyFilters($query, $filters, ['name', 'email']);
 
-            $query->where($field, $value);
-        }
-
-        return $query->latest()->paginate($perPage);
+        return \App\Support\QueryBuilderHelper::applySorting($query, null, 'desc')->paginate($perPage);
     }
 
     /**
