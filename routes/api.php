@@ -20,6 +20,8 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware(['auth:sanctum', 'throttle:api-auth'])->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
+        Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
+        Route::post('/auth/password/reset', [AuthController::class, 'resetPassword']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
     });
 });

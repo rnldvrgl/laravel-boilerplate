@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class AuthApiTest extends TestCase
@@ -120,6 +121,53 @@ class AuthApiTest extends TestCase
             ->assertJsonPath('message', 'Logged out successfully.');
 
         $this->assertCount(0, $user->fresh()->tokens);
+    }
+
+    public function test_authenticated_user_can_update_profile(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Old Name',
+            'email' => 'old@example.com',
+        ]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->putJson('/api/v1/auth/profile', [
+                'name' => 'Updated Name',
+                'email' => 'updated@example.com',
+            ]);
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.user.email', 'updated@example.com')
+            ->assertJsonPath('data.user.name', 'Updated Name');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'name' => 'Updated Name',
+            'email' => 'updated@example.com',
+        ]);
+    }
+
+    public function test_user_can_reset_their_password(): void
+    {
+        $user = User::factory()->create([
+            'password' => 'OldPassword123!',
+        ]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/auth/password/reset', [
+                'current_password' => 'OldPassword123!',
+                'password' => 'NewPassword456!',
+                'password_confirmation' => 'NewPassword456!',
+            ]);
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Password updated successfully.');
+
+        $this->assertTrue(Hash::check('NewPassword456!', $user->fresh()->password));
     }
 
     public function test_user_policy_allows_self_and_denies_other_users(): void
